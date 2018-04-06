@@ -19,13 +19,10 @@ import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -132,18 +129,10 @@ public class VideoRecorder {
     public VideoRecorder(Activity activity) {
         this.activity = activity;
         this.manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
-        createTextureView();
-        frontCameraId = getFrontCameraId();
+        textureView = VideoUtils.createTextureView(activity);
+        frontCameraId = VideoUtils.getFrontCameraId(manager);
     }
 
-    private static Size chooseVideoSize(Size[] choices) {
-        for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
-                return size;
-            }
-        }
-        return choices[choices.length - 1];
-    }
 
     public void startRecording() {
         PermissionUtils.requestPermissions(activity);
@@ -166,26 +155,6 @@ public class VideoRecorder {
 //        stopBackgroundThread();
     }
 
-    private String getFrontCameraId() {
-        try {
-            for (final String cameraId : manager.getCameraIdList()) {
-                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-                int cOrientation = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (cOrientation == CameraCharacteristics.LENS_FACING_FRONT) return cameraId;
-            }
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private void createTextureView() {
-        textureView = new TextureView(activity);
-        textureView.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
-        final ViewGroup viewGroup = (ViewGroup) ((ViewGroup) activity
-                .findViewById(android.R.id.content)).getChildAt(0);
-        viewGroup.addView(textureView);
-    }
 
     private void closePreviewSession() {
         if (previewSession != null) {
@@ -237,10 +206,10 @@ public class VideoRecorder {
             if (map == null) {
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
-            videoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+            videoSize = VideoUtils.chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
 
             int orientation = activity.getResources().getConfiguration().orientation;
-            configureTransform(width, height);
+//            configureTransform(width, height);
             mediaRecorder = new MediaRecorder();
             manager.openCamera(frontCameraId, stateCallback, null);
         } catch (InterruptedException e) {
@@ -360,8 +329,6 @@ public class VideoRecorder {
         mediaRecorder.prepare();
     }
 
-
-
     private void startRecordingVideo() {
         if (null == cameraDevice || !textureView.isAvailable()) {
             return;
@@ -406,13 +373,4 @@ public class VideoRecorder {
 
     }
 
-    static class CompareSizesByArea implements Comparator<Size> {
-
-        @Override
-        public int compare(Size lhs, Size rhs) {
-            return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
-                    (long) rhs.getWidth() * rhs.getHeight());
-        }
-
-    }
 }
