@@ -13,25 +13,28 @@ import android.support.v4.content.ContextCompat;
 public final class PermissionUtils {
 
 
-    private static final int REQUEST_VIDEO_PERMISSIONS = 1;
-    private static final String[] VIDEO_PERMISSIONS = {
+    private static final int ETL_PERMISSION_CODE = 1;
+    private static final String[] ETL_PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
     public static boolean hasPermissions(Context context) {
-        boolean hasCameraPermission = ContextCompat.checkSelfPermission(context, VIDEO_PERMISSIONS[0])
-                == PackageManager.PERMISSION_GRANTED;
-        boolean hasRecordAudioPermission = ContextCompat.checkSelfPermission(context, VIDEO_PERMISSIONS[1])
-                == PackageManager.PERMISSION_GRANTED;
-        return hasCameraPermission && hasRecordAudioPermission;
+        for (String permission : ETL_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(context, permission)
+                    != PackageManager.PERMISSION_GRANTED)
+                return false;
+        }
+        return true;
     }
 
     public static void requestPermissions(Activity activity) {
         if (!hasPermissions(activity)) {
             ActivityCompat.requestPermissions(activity,
-                    VIDEO_PERMISSIONS,
-                    REQUEST_VIDEO_PERMISSIONS);
+                    ETL_PERMISSIONS,
+                    ETL_PERMISSION_CODE);
         }
     }
 }

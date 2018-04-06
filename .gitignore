@@ -77,3 +77,6 @@ fastlane/readme.md
 .idea
 out
 gen
+Будет удалено demo/libs/
+Будет удалено emotionstestinglibrary/libs/
+Будет удалено emotionstestinglibrary/src/main/res/drawable/

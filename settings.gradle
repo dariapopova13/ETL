@@ -1,1 +1,1 @@
-include ':app', ':emotionstestinglibrary'
+include ':demo', ':emotionstestinglibrary', ':demo'
