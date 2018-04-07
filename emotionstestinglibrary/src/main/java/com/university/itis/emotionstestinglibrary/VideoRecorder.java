@@ -2,8 +2,6 @@ package com.university.itis.emotionstestinglibrary;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Matrix;
-import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -14,11 +12,17 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
+
+import com.university.itis.emotionstestinglibrary.utils.PermissionUtils;
+import com.university.itis.emotionstestinglibrary.utils.StorageUtils;
+import com.university.itis.emotionstestinglibrary.utils.VideoUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +57,6 @@ public class VideoRecorder {
 
     private Activity activity;
     private boolean isInit;
-    private String frontCameraId;
     private boolean isRecordingVideo;
 
     private TextureView textureView;
@@ -63,8 +66,8 @@ public class VideoRecorder {
     private MediaRecorder mediaRecorder;
     private CameraManager manager;
 
-    //    private HandlerThread mBackgroundThread;
-//    private Handler mBackgroundHandler;
+    private HandlerThread mBackgroundThread;
+    private Handler mBackgroundHandler;
 
     private Semaphore cameraOpenCloseLock = new Semaphore(1);
     private Integer sensorOrientation;
@@ -78,9 +81,6 @@ public class VideoRecorder {
             VideoRecorder.this.cameraDevice = cameraDevice;
             startPreview();
             cameraOpenCloseLock.release();
-            if (null != textureView) {
-                configureTransform(textureView.getWidth(), textureView.getHeight());
-            }
         }
 
         @Override
@@ -126,18 +126,18 @@ public class VideoRecorder {
 
     };
 
+
     public VideoRecorder(Activity activity) {
         this.activity = activity;
         this.manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         textureView = VideoUtils.createTextureView(activity);
-        frontCameraId = VideoUtils.getFrontCameraId(manager);
     }
 
 
     public void startRecording() {
         PermissionUtils.requestPermissions(activity);
         if (!PermissionUtils.hasPermissions(activity)) return;
-//        startBackgroundThread();
+        startBackgroundThread();
         if (textureView.isAvailable()) {
             openCamera(textureView.getWidth(), textureView.getHeight());
         } else {
@@ -152,7 +152,7 @@ public class VideoRecorder {
             stopRecordingVideo();
         }
         closeCamera();
-//        stopBackgroundThread();
+        stopBackgroundThread();
     }
 
 
@@ -164,6 +164,11 @@ public class VideoRecorder {
     }
 
     private void stopRecordingVideo() {
+        try {
+            previewSession.stopRepeating();
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
         isRecordingVideo = false;
         mediaRecorder.stop();
         mediaRecorder.reset();
@@ -171,22 +176,23 @@ public class VideoRecorder {
     }
 
 
-//    private void startBackgroundThread() {
-//        mBackgroundThread = new HandlerThread("CameraBackground");
-//        mBackgroundThread.start();
-//        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
-//    }
-//
-//    private void stopBackgroundThread() {
-//        mBackgroundThread.quitSafely();
-//        try {
-//            mBackgroundThread.join();
-//            mBackgroundThread = null;
-//            mBackgroundHandler = null;
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    private void startBackgroundThread() {
+        mBackgroundThread = new HandlerThread("CameraBackground");
+        mBackgroundThread.start();
+        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+    }
+
+    private void stopBackgroundThread() {
+        mBackgroundThread.quitSafely();
+        try {
+            mBackgroundThread.join();
+            mBackgroundThread = null;
+            mBackgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @SuppressWarnings("MissingPermission")
     private void openCamera(int width, int height) {
@@ -199,25 +205,24 @@ public class VideoRecorder {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
 
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(frontCameraId);
+            CameraCharacteristics characteristics = VideoUtils.getCameraCharacteristics(manager);
             StreamConfigurationMap map = characteristics
                     .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
             if (map == null) {
                 throw new RuntimeException("Cannot get available preview/video sizes");
             }
+
             videoSize = VideoUtils.chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
 
             int orientation = activity.getResources().getConfiguration().orientation;
-//            configureTransform(width, height);
             mediaRecorder = new MediaRecorder();
-            manager.openCamera(frontCameraId, stateCallback, null);
+            manager.openCamera(VideoUtils.getFrontCameraId(manager), stateCallback, mBackgroundHandler);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
     }
 
     private void closeCamera() {
@@ -263,7 +268,7 @@ public class VideoRecorder {
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                         }
-                    }, null);
+                    }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -275,8 +280,9 @@ public class VideoRecorder {
         }
         try {
             setUpCaptureRequestBuilder(previewBuilder);
-//            HandlerThread thread = new HandlerThread("CameraPreview");
-//            thread.start();
+            HandlerThread thread = new HandlerThread("CameraPreview");
+            thread.start();
+
             previewSession.setRepeatingRequest(previewBuilder.build(), null, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -287,25 +293,11 @@ public class VideoRecorder {
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
     }
 
-    private void configureTransform(int viewWidth, int viewHeight) {
-        if (null == textureView || null == activity) {
-            return;
-        }
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-
-        textureView.setTransform(matrix);
-    }
-
     private void setUpMediaRecorder() throws IOException {
         if (null == activity) {
             return;
         }
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (nextVideoAbsolutePath == null || nextVideoAbsolutePath.isEmpty()) {
@@ -354,23 +346,17 @@ public class VideoRecorder {
                 public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
                     previewSession = cameraCaptureSession;
                     updatePreview();
-                    activity.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            isRecordingVideo = true;
-                            mediaRecorder.start();
-                        }
-                    });
+                    isRecordingVideo = true;
+                    mediaRecorder.start();
                 }
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
                 }
-            }, null);
+            }, mBackgroundHandler);
         } catch (CameraAccessException | IOException e) {
             e.printStackTrace();
         }
-
     }
 
 }

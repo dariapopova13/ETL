@@ -25,11 +25,11 @@ public class ETL {
         return testId;
     }
 
-    private void initLib(){
+    private void initLib() {
     }
 
 
-    public static Builder Builder(){
+    public static Builder Builder() {
         builder = new Builder();
         return builder;
     }

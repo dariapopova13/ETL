@@ -32,6 +32,6 @@ public class FirstDemoActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         videoRecorder.stopRecording();
-        super.onStop();
+        super.onPause();
     }
 }

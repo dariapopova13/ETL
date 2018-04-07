@@ -13,7 +13,7 @@ public class DemoApplication extends Application{
     public void onCreate() {
         super.onCreate();
         ETL.Builder()
-                .setTestId(1)
+                .setTestId(2)
                 .setApplication(this)
                 .build();
     }
