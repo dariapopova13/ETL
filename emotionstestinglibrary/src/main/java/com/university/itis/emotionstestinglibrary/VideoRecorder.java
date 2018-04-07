@@ -66,8 +66,8 @@ public class VideoRecorder {
     private MediaRecorder mediaRecorder;
     private CameraManager manager;
 
-    private HandlerThread mBackgroundThread;
-    private Handler mBackgroundHandler;
+    private HandlerThread backgroundThread;
+    private Handler backgroundHandler;
 
     private Semaphore cameraOpenCloseLock = new Semaphore(1);
     private Integer sensorOrientation;
@@ -166,7 +166,7 @@ public class VideoRecorder {
     private void stopRecordingVideo() {
         try {
             previewSession.stopRepeating();
-        } catch (CameraAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         isRecordingVideo = false;
@@ -177,17 +177,17 @@ public class VideoRecorder {
 
 
     private void startBackgroundThread() {
-        mBackgroundThread = new HandlerThread("CameraBackground");
-        mBackgroundThread.start();
-        mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        backgroundThread = new HandlerThread("CameraBackground");
+        backgroundThread.start();
+        backgroundHandler = new Handler(backgroundThread.getLooper());
     }
 
     private void stopBackgroundThread() {
-        mBackgroundThread.quitSafely();
+        backgroundThread.quitSafely();
         try {
-            mBackgroundThread.join();
-            mBackgroundThread = null;
-            mBackgroundHandler = null;
+            backgroundThread.join();
+            backgroundThread = null;
+            backgroundHandler = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -217,7 +217,7 @@ public class VideoRecorder {
 
             int orientation = activity.getResources().getConfiguration().orientation;
             mediaRecorder = new MediaRecorder();
-            manager.openCamera(VideoUtils.getFrontCameraId(manager), stateCallback, mBackgroundHandler);
+            manager.openCamera(VideoUtils.getFrontCameraId(manager), stateCallback, backgroundHandler);
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (CameraAccessException e) {
@@ -268,7 +268,7 @@ public class VideoRecorder {
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
                         }
-                    }, mBackgroundHandler);
+                    }, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -353,7 +353,7 @@ public class VideoRecorder {
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
                 }
-            }, mBackgroundHandler);
+            }, backgroundHandler);
         } catch (CameraAccessException | IOException e) {
             e.printStackTrace();
         }

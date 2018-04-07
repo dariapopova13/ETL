@@ -1,7 +1,9 @@
 package com.university.itis.demo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 
 import com.university.itis.emotionstestinglibrary.VideoRecorder;
 
@@ -11,6 +13,11 @@ import com.university.itis.emotionstestinglibrary.VideoRecorder;
 public class SecondDemoActivity extends AppCompatActivity {
 
     private VideoRecorder videoRecorder;
+
+    public void onClick(View view) {
+        Intent intent = new Intent(this, ThirdActivity.class);
+        startActivity(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
