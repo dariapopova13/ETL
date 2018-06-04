@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">EmotionsTestingLibrary</string>
+    <string name="content_title">Video files are uploading</string>
 </resources>

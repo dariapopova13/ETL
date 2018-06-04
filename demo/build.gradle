@@ -35,3 +35,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     compile project(path: ':emotionstestinglibrary')
 }
+
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
