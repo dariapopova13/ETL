@@ -123,12 +123,8 @@ class VideoRecorder(private val activity: Activity) {
     }
     
     private fun closePreviewSession() {
-        try {
             previewSession?.close()
-        } catch (e: IllegalStateException) {
-        } finally {
             previewSession = null
-        }
     }
     
     private fun stopRecordingVideo() {
@@ -206,7 +202,10 @@ class VideoRecorder(private val activity: Activity) {
         setUpCaptureRequestBuilder(previewBuilder)
         val thread = HandlerThread("CameraPreview")
         thread.start()
-        previewSession?.setRepeatingRequest(previewBuilder?.build(), null, null)
+        try {
+            previewSession?.setRepeatingRequest(previewBuilder?.build(), null, null)
+        } catch (e: CameraAccessException) {
+        }
     }
     
     private fun setUpCaptureRequestBuilder(builder: CaptureRequest.Builder?) {

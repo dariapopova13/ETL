@@ -55,7 +55,6 @@ class VideoUploadService : IntentService("VideoUploadService") {
     
     private fun final(message: String) {
         NotificationManagerCompat.from(this).cancelAll()
-        stopSelf()
         Log.i(VideoUploadService::class.java.name, message)
     }
     
