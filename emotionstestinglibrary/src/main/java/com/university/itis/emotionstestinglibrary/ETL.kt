@@ -57,8 +57,6 @@ object ETL {
                 frontCameraId = cameraId
         }
     }
-    
-    
 }
 
 object Sensors {

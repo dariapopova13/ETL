@@ -64,6 +64,7 @@ class VideoRecorder(private val activity: Activity) {
         override fun onSurfaceTextureAvailable(surfaceTexture: SurfaceTexture,
                                                width: Int, height: Int) {
             openCamera(width, height)
+//
         }
         
         override fun onSurfaceTextureSizeChanged(surfaceTexture: SurfaceTexture,
@@ -71,6 +72,7 @@ class VideoRecorder(private val activity: Activity) {
         }
         
         override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
+            surfaceTexture.release()
             return true
         }
         
@@ -94,6 +96,7 @@ class VideoRecorder(private val activity: Activity) {
             openCamera(textureView.width, textureView.height)
         } else {
             textureView.surfaceTextureListener = surfaceTextureListener
+            startRecordingVideo()
         }
         isInit = true
     }
@@ -115,18 +118,25 @@ class VideoRecorder(private val activity: Activity) {
     private fun closeCamera() {
         cameraOpenCloseLock.acquire()
         cameraDevice?.close()
-        cameraDevice = null
         mediaRecorder?.release()
+        cameraDevice = null
         mediaRecorder = null
     }
     
     private fun closePreviewSession() {
-        previewSession?.close()
-        previewSession = null
+        try {
+            previewSession?.close()
+            previewSession = null
+        } catch (e: IllegalStateException) {
+        }
     }
     
     private fun stopRecordingVideo() {
-        previewSession?.stopRepeating()
+        try {
+            previewSession?.stopRepeating()
+            previewSession?.abortCaptures()
+        } catch (e: CameraAccessException) {
+        }
         mediaRecorder?.stop()
         sendVideoToServer(nextVideoAbsolutePath, activity, currentTime)
     }
@@ -138,9 +148,9 @@ class VideoRecorder(private val activity: Activity) {
     }
     
     private fun startBackgroundThread() {
-        backgroundThread = HandlerThread("CameraBackground")
+        backgroundThread = HandlerThread(activity::class.java.name)
         backgroundThread?.start()
-        backgroundHandler = Handler(backgroundThread!!.looper)
+        backgroundHandler = Handler(backgroundThread?.looper)
     }
     
     private fun stopBackgroundThread() {

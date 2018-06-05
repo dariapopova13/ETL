@@ -58,17 +58,14 @@ val currentTime: Long
         return System.currentTimeMillis() / 1000L
     }
 
-fun sendVideoToServer(filePath: String?, context: Context, stop: Long) {
-    val newFilePath = filePath?.plus("_${stop}.mp4")
-    File(filePath).renameTo(File(newFilePath))
-    sendVideoToServer(newFilePath, context)
-}
+val ETL_END_TIME = "etl_end_time"
 
-fun sendVideoToServer(filePath: String?, context: Context) {
+fun sendVideoToServer(filePath: String?, context: Context, stop: Long? = null) {
     val videoUploadIntent = Intent(context, VideoUploadService::class.java)
-    videoUploadIntent.putExtra(ETL_VIDEO_PATH, filePath)
+    videoUploadIntent.putExtra(ETL_VIDEO_PATH, filePath).putExtra(ETL_END_TIME, stop)
     context.startService(videoUploadIntent)
 }
+
 
 data class VideoTime(val startTime: Long?, val finishTime: Long?)
 

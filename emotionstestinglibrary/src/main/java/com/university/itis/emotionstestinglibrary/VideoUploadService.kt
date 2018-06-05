@@ -17,8 +17,14 @@ class VideoUploadService : IntentService("VideoUploadService") {
     private val SERVICE_ID = 13
     
     override fun onHandleIntent(intent: Intent?) {
-        val videoPath = intent?.getStringExtra(ETL_VIDEO_PATH)
-        uploadVideo(videoPath)
+        var filePath = intent?.getStringExtra(ETL_VIDEO_PATH)
+        val stop = intent?.getLongExtra(ETL_END_TIME, -1)
+        if (stop != -1L) {
+            val newFilePath = filePath?.plus("_${stop}.mp4")
+            File(filePath).renameTo(File(newFilePath))
+            filePath = newFilePath
+        }
+        uploadVideo(filePath)
     }
     
     
