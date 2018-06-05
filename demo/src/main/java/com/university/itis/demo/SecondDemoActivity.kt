@@ -15,7 +15,7 @@ class SecondDemoActivity : AppCompatActivity() {
     private var videoRecorder: VideoRecorder? = null
 
     fun onClick(view: View) {
-        val intent = Intent(this, ThirdActivity::class.java)
+        val intent = Intent(this, ThirdDemoActivity::class.java)
         startActivity(intent)
     }
 

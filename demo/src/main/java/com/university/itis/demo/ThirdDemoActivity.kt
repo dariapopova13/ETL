@@ -11,7 +11,7 @@ import com.university.itis.emotionstestinglibrary.VideoRecorder
 /**
  * Created by Daria Popova on 07.04.18.
  */
-class ThirdActivity : AppCompatActivity() {
+class ThirdDemoActivity : AppCompatActivity() {
 
     private var videoRecorder: VideoRecorder? = null
     private var toast: Toast? = null

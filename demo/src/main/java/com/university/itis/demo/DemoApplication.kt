@@ -10,6 +10,11 @@ class DemoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         ETL.testId = UUID.randomUUID().toString()
-        ETL.apiKey = "c8b3352e-08f8-4614-bc12-00590bfd72ca"
+        ETL.apiKey = "76596227-e453-4497-8485-8276452884e7"
+        ETL.application = this
+        ETL.testAB = "a"
+        ETL.initLib()
     }
+    
+   
 }
